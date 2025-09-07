@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>幸運餅乾｜籤詩抽卡</title>
+<style>
+  :root{
+    --bg:#faf7ef;
+    --ink:#1f1f1f;
+    --accent:#ffcc66;
+    --accent-deep:#f1b74a;
+    --paper:#fffdf7;
+    --shadow:0 12px 30px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-rounded, system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: radial-gradient(1200px 1200px at 70% -10%, #fff6e0 0%, var(--bg) 55%) no-repeat;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .app{
+    width:min(720px, 92vw);
+    text-align:center;
+  }
+  h1{
+    font-size: clamp(28px, 4vw, 40px);
+    letter-spacing:.06em;
+    margin:0 0 18px;
+  }
+  .sub{
+    opacity:.7;
+    margin-bottom:28px;
+  }
+
+  /* Big CTA button */
+  .big-cta{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width: min(540px, 92vw);
+    height: clamp(88px, 14vw, 120px);
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight:800;
+    letter-spacing:.12em;
+    border:none;
+    border-radius: 22px;
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-deep) 100%);
+    color:#5a3a00;
+    box-shadow: var(--shadow);
+    cursor:pointer;
+    transition: transform .08s ease, box-shadow .18s ease, filter .18s ease;
+    user-select:none;
+    position:relative;
+    text-shadow:0 1px 0 rgba(255,255,255,.35);
+  }
+  .big-cta:active{ transform: scale(.98) translateY(1px); filter:saturate(1.03) }
+  .big-cta .emoji{ font-size:1.2em; margin-left:.3em }
+
+  /* Stage */
+  .stage{
+    position:relative;
+    height:min(420px, 70vh);
+    display:none;
+    margin-top:6px;
+    perspective:1000px;
+  }
+
+  /* Tearable paper (like a cookie wrapper you rip open) */
+  .paper-wrap{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .paper{
+    position:absolute;
+    top:50%;
+    width:min(520px, 92vw);
+    height:150px;
+    background:
+      radial-gradient(120% 180% at 50% -50%, rgba(255,255,255,.9), rgba(255,255,255,0) 60%),
+      repeating-linear-gradient(0deg, #ffffff 0 8px, #fff7eb 8px 16px);
+    box-shadow: var(--shadow);
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,.06);
+    transform: translateY(-50%);
+    overflow:hidden;
+  }
+  .paper.left{ left:50%; transform: translate(-100%, -50%) rotate(0deg); }
+  .paper.right{ left:50%; transform: translate(0%, -50%) rotate(0deg); }
+
+  /* Perforated tear edge using gradients */
+  .paper.left::after, .paper.right::before{
+    content:"";
+    position:absolute;
+    top:0; bottom:0;
+    width:14px;
+    background:
+      radial-gradient(6px 6px at 50% 6px, rgba(0,0,0,.06) 49%, transparent 51%) repeat-y;
+    background-size:12px 14px;
+    opacity:.7;
+  }
+  .paper.left::after{ right:-7px; }
+  .paper.right::before{ left:-7px; }
+
+  /* "撕開" hint */
+  .hint{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    font-weight:700; letter-spacing:.25em; opacity:.5;
+    pointer-events:none; user-select:none;
+  }
+
+  /* Fortune strip */
+  .fortune{
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%,-50%) scale(.96);
+    width:min(520px, 92vw);
+    padding:18px 20px;
+    background: var(--paper);
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:10px;
+    box-shadow: var(--shadow);
+    text-align:center;
+    display:none;
+  }
+  .fortune h3{
+    margin:0 0 8px;
+    font-size: clamp(18px, 3.4vw, 22px);
+    letter-spacing:.18em;
+    opacity:.75;
+  }
+  .fortune p{
+    margin:6px 0 0;
+    line-height:1.7;
+    font-size: clamp(18px, 3.4vw, 22px);
+  }
+  .meta{
+    margin-top:10px; font-size:.9em; opacity:.65;
+  }
+
+  /* Reset button */
+  .again{
+    margin-top:18px;
+    border:none; background:transparent; cursor:pointer;
+    font-weight:700; letter-spacing:.2em; text-decoration:underline;
+  }
+
+  /* Tear animation states */
+  .stage.rip .paper.left{
+    animation: leftRip .9s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  .stage.rip .paper.right{
+    animation: rightRip .9s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  .stage.rip .hint{ opacity:0; }
+
+  @keyframes leftRip{
+    0%{ transform: translate(-100%, -50%) rotate(0deg); }
+    30%{ transform: translate(calc(-100% - 6px), -50%) rotate(-2deg); }
+    100%{ transform: translate(calc(-100% - 60vw), -50%) rotate(-6deg); opacity:0; }
+  }
+  @keyframes rightRip{
+    0%{ transform: translate(0%, -50%) rotate(0deg); }
+    30%{ transform: translate(6px, -50%) rotate(2deg); }
+    100%{ transform: translate(60vw, -50%) rotate(6deg); opacity:0; }
+  }
+
+  /* Reveal animation */
+  .stage.show-fortune .fortune{
+    display:block;
+    animation: pop .45s cubic-bezier(.18,.9,.2,1) both .1s;
+  }
+  @keyframes pop{
+    0%{ transform: translate(-50%,-50%) scale(.9); opacity:0 }
+    100%{ transform: translate(-50%,-50%) scale(1); opacity:1 }
+  }
+
+  /* small footer */
+  footer{
+    margin-top:26px;
+    font-size:12px; opacity:.5
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <h1>幸運餅乾</h1>
+    <div class="sub">按下去 → 撕開包裝 → 看見今日籤詩</div>
+
+    <button id="drawBtn" class="big-cta" aria-label="抽一張幸運餅乾">
+      幸運餅乾 <span class="emoji">🥠</span>
+    </button>
+
+    <section id="stage" class="stage" aria-live="polite" aria-atomic="true">
+      <div class="paper-wrap">
+        <div class="paper left" aria-hidden="true"></div>
+        <div class="paper right" aria-hidden="true"></div>
+        <div class="hint">— 撕 開 —</div>
+      </div>
+
+      <div id="fortune" class="fortune" role="status">
+        <h3>今日籤詩</h3>
+        <p id="fortuneText"></p>
+        <div class="meta" id="fortuneMeta"></div>
+        <button id="again" class="again">再抽一次</button>
+      </div>
+    </section>
+
+    <footer>Made with ♥︎ for you</footer>
+  </main>
+
+<script>
+(function(){
+  const fortunes = [
+    // 財富
+    {tag:"財富", text:"我值得豐盛，金錢正輕鬆流向我。"},
+    {tag:"財富", text:"把焦點放在創造價值，金流自然成形。"},
+    {tag:"財富", text:"今天做一個小決定，為未來帶來大複利。"},
+    {tag:"財富", text:"宇宙為你的努力安排意外之財與機會。"},
+    // 愛情
+    {tag:"愛情", text:"我的愛情穩定甜蜜，對方與我心意一致。"},
+    {tag:"愛情", text:"真誠溝通是一份禮物，願望因此靠近。"},
+    {tag:"愛情", text:"你足夠可愛，值得被好好對待與珍惜。"},
+    {tag:"愛情", text:"放輕鬆，愛會在你微笑時靠近。"},
+    // 內在小孩
+    {tag:"內在小孩", text:"我溫柔抱住內在小孩，他感到安心。"},
+    {tag:"內在小孩", text:"允許自己玩耍與好奇，靈感因此湧現。"},
+    {tag:"內在小孩", text:"今天請對自己多一分耐心與肯定。"},
+    {tag:"內在小孩", text:"給自己一個擁抱，你已經做得很好。"}
+  ];
+
+  const drawBtn = document.getElementById('drawBtn');
+  const stage = document.getElementById('stage');
+  const fortuneBox = document.getElementById('fortune');
+  const fortuneText = document.getElementById('fortuneText');
+  const fortuneMeta = document.getElementById('fortuneMeta');
+  const again = document.getElementById('again');
+
+  function pickFortune(){
+    const i = Math.floor(Math.random() * fortunes.length);
+    return fortunes[i];
+  }
+
+  function startRip(){
+    // Show stage, hide button
+    drawBtn.style.display = 'none';
+    stage.style.display = 'block';
+
+    // Animate tearing
+    stage.classList.add('rip');
+
+    // After the rip animation ends, reveal fortune
+    setTimeout(()=>{
+      const f = pickFortune();
+      fortuneText.textContent = f.text;
+      fortuneMeta.textContent = "主題：" + f.tag + " ｜ 現在是你的好時機";
+      stage.classList.add('show-fortune');
+    }, 930); // slightly longer than rip animation
+  }
+
+  function reset(){
+    // Reset classes and show button again
+    stage.classList.remove('rip', 'show-fortune');
+    stage.style.display = 'none';
+    drawBtn.style.display = 'inline-flex';
+  }
+
+  drawBtn.addEventListener('click', startRip);
+  again.addEventListener('click', reset);
+})();
+</script>
+</body>
+</html>
